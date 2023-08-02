@@ -1,116 +1,106 @@
 package less.stupid.neat
 
-import java.util.UUID
-import less.stupid.neat.Mutations._
+import java.util.concurrent.atomic.AtomicInteger
 
-final case class SpeciesId(value: UUID)
-object SpeciesId {
-  def random(): SpeciesId =
-    new SpeciesId(UUID.randomUUID())
+final case class SpeciesId(value: Int)
+
+trait SpeciesIdProvider {
+  def next(): SpeciesId
 }
 
-final case class Species(
-    id: SpeciesId,
-    lastInnovation: Generation,
-    archetype: Genotype,
-    evaluatedGenotypes: List[EvaluatedGenotype],
-    bestGenotype: Genotype,
-    bestFitness: Fitness,
-    averageFitness: Fitness) {
+final class AtomicSpeciesIdProvider extends SpeciesIdProvider {
+  private val counter = new AtomicInteger()
+  def next(): SpeciesId =
+    SpeciesId(counter.getAndIncrement())
+
+}
+
+final case class Species(id: SpeciesId, organisms: List[Organism], genomes: Set[Genome]) {
 
   /**
-   * Adds a new evaluated Genotype to this species.
-   *
-   * This will return a new species, keeping track of the last innovation (the last generation when this species
-   * improved its best fitness) as well as the references to best genotype, best fitness and the updated average
-   * fitness of the species
-   *
-   * These properties are used when breeding from this species.
-   *
-   * @param evaluatedGenotype
-   * @return
-   *   A new Species with updated properties (see above)
+   * The most fit genome from this species is used as the "archetype" for the species.
+   * That is, when calculating if a new genome belongs in this species it is compared with the genome from the fittest organism.
    */
-  def withEvaluatedGenotype(evaluatedGenotype: EvaluatedGenotype, generation: Generation): Species = {
-    val (nextInnovation, nextBestGenotype, nextBestFitness) = if (evaluatedGenotype.fitness > bestFitness) {
-      (generation, evaluatedGenotype.genotype, evaluatedGenotype.fitness)
-    } else {
-      (lastInnovation, bestGenotype, bestFitness)
-    }
-    val nextEvaluatedGenotypes = evaluatedGenotypes :+ evaluatedGenotype
-    val nextAverageFitness = {
-      val total = evaluatedGenotypes.map(_.fitness.value).sum
-      Fitness(total / evaluatedGenotypes.size)
-    }
-    copy(
-      lastInnovation = nextInnovation,
-      evaluatedGenotypes = nextEvaluatedGenotypes,
-      bestGenotype = nextBestGenotype,
-      bestFitness = nextBestFitness,
-      averageFitness = nextAverageFitness)
+  lazy val fittestGenome: Option[Genome] =
+    organisms.sortBy(-_.fitness).map(_.genome).headOption.orElse(genomes.headOption)
+
+  lazy val averageFitness: BigDecimal =
+    organisms.map(_.fitness).sum / organisms.size
+
+  /**
+   * Used to add children to this species ready for use in the next generation.
+   * We aim to keep a stable population count of the most fit genomes across the population so adding a child
+   * means removing the least fit organism from this species.
+   *
+   * @param genome
+   * @return
+   */
+  def withGenome(genome: Genome): Species = {
+    val newOrganisms = if (organisms.isEmpty) organisms else organisms.sortBy(_.fitness).tail
+    val newGenomes = genomes + genome
+    copy(organisms = newOrganisms, genomes = newGenomes)
   }
 
-  def breed(generation: Generation, sumOfAllSpeciesFitness: Fitness, numberOfSpecies: Int)(implicit
-      settings: EvolutionSettings): Set[Genotype] = {
-    // If we haven't improved in the last 10 generations...
-    if (generation <> lastInnovation > 10) {
-      Set(bestGenotype)
-    } else {
-      val numberOfChildrenToCreate: Int = if (sumOfAllSpeciesFitness.isZero()) {
-        settings.populationSize / numberOfSpecies
-      } else {
-        (averageFitness / sumOfAllSpeciesFitness * settings.populationSize) - 1
+  /**
+   * To breed children from the population of this species we first calculate the number of offspring we expect to create
+   * this is calculated by taking the average fitness of this species and comparing to the overall fitness average
+   * of the entire population (of all species).
+   *
+   * `expectedOffspring = averageFitnessOfSpecies / averageFitnessOfEntirePopulation`
+   *
+   * In this way the best performing species are allowed to produce more children than the worst.
+   * Any species with an average fitness less than the overall average won't produce any offspring.
+   *
+   * Note we don't return a new Species here! Speciation is done in the `Population.epoch` function - all the children
+   * from all the species are gathered and speciated in the next step after breeding
+   *
+   * @param generation
+   * @param overallAverageFitness
+   * @param settings
+   * @param mutator
+   * @param nodeIdProvider
+   * @param innovationNumberProvider
+   * @return
+   */
+  def breed(generation: Int, overallAverageFitness: BigDecimal)(implicit
+      reproductionConfiguration: ReproductionConfiguration,
+      mutationConfiguration: MutationConfiguration,
+      mutator: GenomeMutator,
+      nodeIdProvider: NodeIdProvider,
+      innovationNumberProvider: InnovationNumberProvider): List[Genome] = {
+    import GenomeUtils.OrganismListOps
+
+    val expectedOffspring = (averageFitness / overallAverageFitness).intValue
+
+    (0 until expectedOffspring)
+      .map { _ =>
+        if (reproductionConfiguration.shouldMutateOnly()) {
+          organisms.randomOrganism().map(organism => mutator.mutate(organism.genome))
+        } else {
+          organisms.mate()
+        }
       }
-
-      val numberOfGenotypesToKeep = Math.max((evaluatedGenotypes.size * (1 - settings.KILL_OFF)).intValue, 1)
-
-      val children =
-        evaluatedGenotypes.sortBy(_.fitness.value).reverse.map(_.genotype).take(numberOfGenotypesToKeep).map(_.mutate())
-
-      children.toSet
-    }
+      .flatten
+      .toList
   }
-
-  //  def evaluateFitness(fitnessEvaluator: FitnessEvaluator): SpeciesFitness = {
-//    val genotypesAndFitness = genotypes.map(genotype => (genotype, fitnessEvaluator.evaluate(genotype)))
-//    new SpeciesFitness(genotypesAndFitness)
-//  }
 }
-
-//final class SpeciesFitness(genotypesAndFitness: List[(Genotype, Fitness)]) {
-//  lazy val averageFitness: Fitness = {
-//    val total = genotypesAndFitness.map {
-//      case (_, fitness) => fitness.value
-//    }.sum
-//    Fitness(total / genotypesAndFitness.size)
-//  }
-//
-//  lazy val bestFitness: Fitness = {
-//    val max = genotypesAndFitness.map {
-//      case (_, fitness) => fitness.value
-//    }.max
-//    Fitness(max)
-//  }
-//}
-
 object Species {
 
-  def apply(evaluatedGenotype: EvaluatedGenotype, generation: Generation): Species =
-    new Species(
-      SpeciesId.random(),
-      generation,
-      evaluatedGenotype.genotype,
-      List(evaluatedGenotype),
-      evaluatedGenotype.genotype,
-      evaluatedGenotype.fitness,
-      evaluatedGenotype.fitness)
+  def apply(organism: Organism)(implicit speciesIdProvider: SpeciesIdProvider): Species =
+    new Species(speciesIdProvider.next(), List(organism), Set.empty)
+
+  def apply(genome: Genome)(implicit speciesIdProvider: SpeciesIdProvider): Species =
+    new Species(speciesIdProvider.next(), List.empty, Set(genome))
 }
 
-object SpeciesOps {
+object SpeciesUtils {
 
-  implicit class ListOfSpecies(self: List[Species]) {
+  implicit class SpeciesSetOps(self: Set[Species]) {
 
-    def findFitForGenotype(genotype: Genotype)(implicit evolutionSettings: EvolutionSettings): Option[Species] =
-      self.find(species => genotype.distanceTo(species.archetype) > evolutionSettings.DELTA_T)
+    def findFitForGenotype(genome: Genome)(implicit speciationConfiguration: SpeciationConfiguration): Option[Species] =
+      self.find(
+        _.fittestGenome
+          .map(_.distanceTo(genome) > speciationConfiguration.speciesCompatibilityThreshold)
+          .getOrElse(false))
   }
 }

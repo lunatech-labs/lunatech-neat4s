@@ -4,7 +4,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 final case class InnovationNumber(value: Int)
 
-object InnovationNumber {
+trait InnovationNumberProvider {
+  def next(): InnovationNumber
+}
+
+final class AtomicInnovationNumberProvider extends InnovationNumberProvider {
 
   private val count = new AtomicInteger(0)
 
