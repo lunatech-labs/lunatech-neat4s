@@ -1,5 +1,7 @@
-package com.lunatech.neat4s
+package com.lunatech.neat4s.akkastreams
 
+import com.lunatech.neat4s._
+import com.lunatech.neat4s.akkastreams.NodeInfo.{HiddenNodeInfo, InputNodeInfo, OutputNodeInfo}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

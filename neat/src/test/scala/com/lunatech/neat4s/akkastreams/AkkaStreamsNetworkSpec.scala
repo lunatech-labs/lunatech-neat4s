@@ -1,6 +1,7 @@
-package com.lunatech.neat4s
+package com.lunatech.neat4s.akkastreams
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import com.lunatech.neat4s._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
