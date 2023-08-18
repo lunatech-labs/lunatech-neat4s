@@ -3,20 +3,25 @@ package com.lunatech.neat4s.experiments.neat.xor
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import com.lunatech.neat4s._
+import kamon.Kamon
 
-object XOR extends App {
+object XOR {
 
-  implicit val innovationNumberProvider = new AtomicInnovationNumberProvider()
-  implicit val nodeIdProvider = new AtomicNodeIdProvider()
-  implicit val speciesIdProvider = new AtomicSpeciesIdProvider()
-  implicit val geneRepository = new InMemoryGeneRepository()
+  def main(args: Array[String]): Unit = {
+    Kamon.init()
 
-  implicit val system = ActorSystem[Nothing](Behaviors.ignore, "neat-xor")
+    implicit val innovationNumberProvider = new AtomicInnovationNumberProvider()
+    implicit val nodeIdProvider = new AtomicNodeIdProvider()
+    implicit val speciesIdProvider = new AtomicSpeciesIdProvider()
+    implicit val geneRepository = new InMemoryGeneRepository()
 
-  val config = NeatConfiguration.of(system)
+    implicit val system = ActorSystem[Nothing](Behaviors.ignore, "neat-xor")
 
-  implicit val reproductionConfiguration = config.reproduction
-  implicit val speciationConfiguration = config.speciation
+    val config = NeatConfiguration.of(system)
 
-  val initialPopulation = Population.spawn(numberOfInputNodes = 2, numberOfOutputNodes = 1)
+    implicit val reproductionConfiguration = config.reproduction
+    implicit val speciationConfiguration = config.speciation
+
+    val initialPopulation = Population.spawn(numberOfInputNodes = 2, numberOfOutputNodes = 1)
+  }
 }

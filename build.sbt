@@ -16,4 +16,7 @@ lazy val neat = (project in file("neat"))
 
 lazy val `experiments-neat-xor` = (project in file("experiments/neat-xor"))
   .dependsOn(neat)
+  .settings(
+    run / fork := true
+  )
 
