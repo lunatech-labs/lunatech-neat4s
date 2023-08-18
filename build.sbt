@@ -10,3 +10,5 @@ lazy val neat = (project in file("neat"))
     libraryDependencies ++= Dependencies.neatDependencies
   )
 
+lazy val `experiments-neat-xor` = (project in file("experiments/neat-xor"))
+
