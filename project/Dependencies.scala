@@ -5,6 +5,7 @@ object Versions {
   val archUnit = "0.14.1"
   val enumeratum = "1.7.3"
   val logback = "1.2.3"
+  val pureconfig = "0.17.4"
   val scalaTest = "3.2.16"
 }
 
@@ -32,6 +33,10 @@ object Dependencies {
     "ch.qos.logback" % "logback-classic"
   ).map(_ % Versions.logback)
 
+  private val pureconfig = Seq(
+    "com.github.pureconfig" %% "pureconfig"
+  ).map(_ % Versions.pureconfig)
+
   private val scalaTest = Seq(
     "org.scalatest" %% "scalatest"
   ).map(_ % Versions.scalaTest % Test)
@@ -45,5 +50,6 @@ object Dependencies {
     akkaTest ++
     enumeratum ++
     logback ++
+    pureconfig ++
     scalaTest
 }

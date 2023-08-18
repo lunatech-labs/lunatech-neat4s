@@ -1,5 +1,9 @@
 package com.lunatech.neat4s
 
+import akka.actor.typed.ActorSystem
+import pureconfig._
+import pureconfig.generic.auto._
+
 import scala.util.Random
 
 final case class ReproductionConfiguration(mutateOnly: BigDecimal) {
@@ -34,3 +38,12 @@ final case class NeatConfiguration(
     reproduction: ReproductionConfiguration,
     speciation: SpeciationConfiguration,
     mutation: MutationConfiguration)
+
+object NeatConfiguration {
+
+  def of(system: ActorSystem[_]): NeatConfiguration = {
+    val config = system.settings.config
+    val source = ConfigSource.fromConfig(config)
+    source.at("neat").loadOrThrow[NeatConfiguration]
+  }
+}
