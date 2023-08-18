@@ -151,7 +151,8 @@ object AkkaStreamsNetworkImpl {
         case (out, i) => out.out ~> collector.in(i)
       }
 
-      // This graph then becomes a `Flow[List[BigDecimal], BigDecimal, NotUsed]` as it has a single inlet and a single outlet
+      // This graph then becomes a `Flow[List[BigDecimal], List[BigDecimal], NotUsed]` as it has a single inlet and a single outlet
+      // the list of values to give to the inputs comes in and the list of values from the outputs comes out
       FlowShape(splitInput.in, collector.out)
     })
 
