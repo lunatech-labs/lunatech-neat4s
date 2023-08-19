@@ -35,6 +35,7 @@ final case class MutationConfiguration(
     Random.nextDouble() < toggleEnabled
 }
 final case class NeatConfiguration(
+    generations: Int,
     reproduction: ReproductionConfiguration,
     speciation: SpeciationConfiguration,
     mutation: MutationConfiguration)
