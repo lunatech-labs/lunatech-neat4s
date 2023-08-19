@@ -1,10 +1,10 @@
-package com.lunatech.neat4s
+package com.lunatech.neat4s.akkastreams
 
 import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.stream.SourceShape
 import akka.stream.scaladsl.{GraphDSL, Merge, Sink, Source}
-import com.lunatech.neat4s.akkastreams.NetworkNode
+import com.lunatech.neat4s.ActivationFunction
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

@@ -1,9 +1,10 @@
-package com.lunatech.neat4s
+package com.lunatech.neat4s.akkastreams
 
 import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.stream.SourceShape
 import akka.stream.scaladsl.{GraphDSL, Merge, Sink, Source}
+import com.lunatech.neat4s.MapListElementsToOutputs
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
