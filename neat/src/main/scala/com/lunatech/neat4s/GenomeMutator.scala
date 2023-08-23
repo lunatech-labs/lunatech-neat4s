@@ -18,14 +18,12 @@ final class NEATGenomeMutator()(implicit
       addNode(genome)
     } else if (mutationConfiguration.shouldAddLink()) {
       addLink(genome)
+    } else if (mutationConfiguration.shouldMutateWeights()) {
+      mutateWeights(genome)
+    } else if (mutationConfiguration.shouldToggleEnabled()) {
+      toggleEnabled(genome)
     } else {
-      if (mutationConfiguration.shouldMutateWeights()) {
-        mutateWeights(genome)
-      } else if (mutationConfiguration.shouldToggleEnabled()) {
-        toggleEnabled(genome)
-      } else {
-        genome
-      }
+      genome
     }
   }
 
@@ -109,9 +107,8 @@ final class NEATGenomeMutator()(implicit
         }
 
         val newWeight =
-          if (randomChoice > gausspoint) pinToMaxAbsolute(gene.weight + randomNumber, 8)
-          else if (randomChoice > coldgausspoint) pinToMaxAbsolute(randomNumber, 8)
-          else gene.weight
+          if (randomChoice >= gausspoint) pinToMaxAbsolute(gene.weight + randomNumber, 8)
+          else pinToMaxAbsolute(randomNumber, 8)
 
         gene.copy(weight = newWeight)
     }

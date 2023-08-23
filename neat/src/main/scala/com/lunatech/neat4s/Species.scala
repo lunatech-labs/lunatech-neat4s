@@ -1,5 +1,7 @@
 package com.lunatech.neat4s
 
+import org.slf4j.LoggerFactory
+
 import java.util.concurrent.atomic.AtomicInteger
 
 final case class SpeciesId(value: Int)
@@ -16,6 +18,8 @@ final class AtomicSpeciesIdProvider extends SpeciesIdProvider {
 }
 
 final case class Species(id: SpeciesId, organisms: List[Organism], genomes: Set[Genome]) {
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   /**
    * The most fit genome from this species is used as the "archetype" for the species.
@@ -70,7 +74,11 @@ final case class Species(id: SpeciesId, organisms: List[Organism], genomes: Set[
       innovationNumberProvider: InnovationNumberProvider): List[Genome] = {
     import GenomeUtils.OrganismListOps
 
+    log.info(s"breeding from ${organisms.size} organisms & ${genomes.size} genomes")
+
     val expectedOffspring = (averageFitness / overallAverageFitness).intValue
+
+    log.info(s"breeding $expectedOffspring offspring")
 
     (0 until expectedOffspring)
       .map { _ =>

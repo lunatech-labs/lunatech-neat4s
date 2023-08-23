@@ -56,6 +56,10 @@ object XOR {
             }
           })
           .map(errors => Math.pow(4.0 - errors.sum, 2))
+//          .map { fitness =>
+//            log.info(s"fitness of genome ${genome.genes.map(_.innovationNumber)} is $fitness")
+//            fitness
+//          }
 
         val fitness = Await.result(futureFitness, 3.seconds)
 

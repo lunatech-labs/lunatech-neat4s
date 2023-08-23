@@ -1,9 +1,12 @@
 package com.lunatech.neat4s
 
 import NEAT.FitnessFunction
+import org.slf4j.LoggerFactory
 
 final class Population(val species: Set[Species]) {
   import Population.speciate
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   def epoch(generation: Int, fitnessFunction: FitnessFunction)(implicit
       reproductionConfiguration: ReproductionConfiguration,
@@ -13,15 +16,20 @@ final class Population(val species: Set[Species]) {
       nodeIdProvider: NodeIdProvider,
       innovationNumberProvider: InnovationNumberProvider,
       speciesIdProvider: SpeciesIdProvider): Population = {
-    val organisms = species.flatMap(specie => specie.organisms.map(_.genome) ++ specie.genomes).map(fitnessFunction)
+    val organisms = species.flatMap(specie => specie.organisms.map(_.genome) ++ specie.genomes).toSeq.map(fitnessFunction)
     val overallAverageFitness = organisms.map(_.fitness).sum / organisms.size
+
+    log.info(s"overallAverageFitness = ${organisms.map(_.fitness).sum} / ${organisms.size} = $overallAverageFitness")
+    val nextSpecies = speciate(organisms.map(_.genome).toSet, species)
     val children = species.flatMap(_.breed(generation, overallAverageFitness))
-    val nextSpecies = speciate(children, species)
+
 
     new Population(nextSpecies)
   }
 }
 object Population {
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   def spawn(numberOfInputNodes: Int, numberOfOutputNodes: Int, count: Int = 100)(implicit
       reproductionConfiguration: ReproductionConfiguration,
@@ -40,7 +48,7 @@ object Population {
       speciationConfiguration: SpeciationConfiguration,
       speciesIdProvider: SpeciesIdProvider): Set[Species] = {
     import SpeciesUtils.SpeciesSetOps
-    genomes.foldLeft(previousSpecies) { (listOfSpecies, genome) =>
+    val species = genomes.foldLeft(previousSpecies) { (listOfSpecies, genome) =>
       listOfSpecies
         .findFitForGenotype(genome)
         // if we find a match for an existing species we add the child to that species
@@ -50,5 +58,7 @@ object Population {
         // otherwise we just create a new species
         .getOrElse(listOfSpecies + Species(genome))
     }
+    log.info(s"There are now ${species.size} species")
+    species
   }
 }
